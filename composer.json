@@ -1,0 +1,30 @@
+{
+    "name": "technically/search-query",
+    "description": "Parse plaintext search queries into easy-to-use structures",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Technically\\SearchQuery\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ivan Voskoboinyk",
+            "email": "ivan@voskoboinyk.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "pestphp/pest": "^2.0 | ^3.0 | ^4.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
