@@ -264,4 +264,16 @@ describe('QueryParser', function (): void {
             ]),
         );
     });
+
+    it('should handle technically invalid sequence of quoted and unquoted words', function () {
+        $query = (new QueryParser())->parse('keyword"another quoted keyword"end');
+
+        expect($query)->toEqual(
+            new Query([
+                new KeywordFilter('keyword"another'),
+                new KeywordFilter('quoted'),
+                new KeywordFilter('keyword"end'),
+            ]),
+        );
+    });
 });
