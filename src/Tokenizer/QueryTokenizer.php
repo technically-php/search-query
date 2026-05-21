@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Technically\SearchQuery\Tokenizer;
 
@@ -15,18 +16,14 @@ final class QueryTokenizer
     private const COLON      = ':';
     private const MINUS      = '-';
 
-    private string $sequence;
-    private int    $len;
-    private int    $position;
-    private string $currentChar;
+    private readonly string $sequence;
+    private int             $len;
+    private int             $position;
+    private string          $currentChar;
 
-    public function __construct(
-        string $sequence,
-    ) {
-        $this->sequence    = $sequence;
-        $this->len         = mb_strlen($sequence);
-        $this->position    = 0;
-        $this->currentChar = mb_substr($this->sequence, $this->position, 1);
+    public function __construct(string $sequence)
+    {
+        $this->sequence = $sequence;
     }
 
     /**
@@ -34,6 +31,10 @@ final class QueryTokenizer
      */
     public function tokenize(): iterable
     {
+        $this->len         = mb_strlen($this->sequence);
+        $this->position    = 0;
+        $this->currentChar = mb_substr($this->sequence, $this->position, 1);
+
         while ( ! $this->eof()) {
             if ($this->currentChar === self::WHITESPACE) {
                 $whitespace = $this->consumeWhile(self::WHITESPACE);
