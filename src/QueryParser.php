@@ -5,11 +5,10 @@ namespace Technically\SearchQuery;
 
 use Technically\SearchQuery\Filters\FieldFilter;
 use Technically\SearchQuery\Filters\KeywordFilter;
-use Technically\SearchQuery\Tokenizer\QueryTokenizer;
-use Technically\SearchQuery\Tokenizer\Tokens\Literal;
-use Technically\SearchQuery\Tokenizer\Tokens\Operator;
-use Technically\SearchQuery\Tokenizer\Tokens\Token;
-use Technically\SearchQuery\Tokenizer\Tokens\Whitespace;
+use Technically\SearchQuery\Tokens\Literal;
+use Technically\SearchQuery\Tokens\Operator;
+use Technically\SearchQuery\Tokens\Token;
+use Technically\SearchQuery\Tokens\Whitespace;
 
 final readonly class QueryParser
 {

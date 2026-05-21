@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Technically\SearchQuery\Tokenizer\Tokens;
+namespace Technically\SearchQuery\Tokens;
 
 use InvalidArgumentException;
 

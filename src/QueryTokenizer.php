@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Technically\SearchQuery\Tokenizer;
+namespace Technically\SearchQuery;
 
-use Technically\SearchQuery\Tokenizer\Tokens\Literal;
-use Technically\SearchQuery\Tokenizer\Tokens\Operator;
-use Technically\SearchQuery\Tokenizer\Tokens\Token;
-use Technically\SearchQuery\Tokenizer\Tokens\Whitespace;
+use Technically\SearchQuery\Tokens\Literal;
+use Technically\SearchQuery\Tokens\Operator;
+use Technically\SearchQuery\Tokens\Token;
+use Technically\SearchQuery\Tokens\Whitespace;
 
 final class QueryTokenizer
 {

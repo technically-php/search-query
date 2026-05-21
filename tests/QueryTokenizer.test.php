@@ -1,9 +1,9 @@
 <?php
 
-use Technically\SearchQuery\Tokenizer\QueryTokenizer;
-use Technically\SearchQuery\Tokenizer\Tokens\Literal;
-use Technically\SearchQuery\Tokenizer\Tokens\Operator;
-use Technically\SearchQuery\Tokenizer\Tokens\Whitespace;
+use Technically\SearchQuery\QueryTokenizer;
+use Technically\SearchQuery\Tokens\Literal;
+use Technically\SearchQuery\Tokens\Operator;
+use Technically\SearchQuery\Tokens\Whitespace;
 
 describe('QueryTokenizer', function () {
     it('should tokenize empty string to an empty sequence of tokens', function () {
