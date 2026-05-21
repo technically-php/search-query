@@ -20,7 +20,7 @@ final readonly class QueryParser
 
         $tokenizer = new QueryTokenizer($query);
 
-        $tokens = [...$tokenizer->tokenize()];
+        $tokens = iterator_to_array($tokenizer->tokenize());
 
         if (empty($tokens)) {
             return Query::empty();
