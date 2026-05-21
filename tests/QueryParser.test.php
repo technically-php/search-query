@@ -65,6 +65,17 @@ describe('QueryParser', function (): void {
         );
     });
 
+    it('should parse keyword filters with quotes', function () {
+        $query = (new QueryParser())->parse('display 55"');
+
+        expect($query)->toEqual(
+            new Query([
+                new KeywordFilter('display'),
+                new KeywordFilter('55"'),
+            ]),
+        );
+    });
+
     it('should parse queries with negated quoted keywords', function () {
         $query = (new QueryParser())->parse('-"hello world"');
 
