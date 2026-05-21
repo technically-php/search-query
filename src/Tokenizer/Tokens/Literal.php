@@ -9,8 +9,7 @@ final readonly class Literal implements Token
     public function __construct(
         public string $value,
         public bool   $quoted = false,
-    )
-    {
+    ) {
         if (str_contains($value, ' ') && ! $quoted) {
             throw new InvalidArgumentException('Literal token cannot contain spaces when not quoted.');
         }
@@ -23,5 +22,15 @@ final readonly class Literal implements Token
         }
 
         return $this->value;
+    }
+
+    public function with(
+        string | null $value = null,
+        bool | null $quoted = null,
+    ): self {
+        return new self(
+            $value !== null ? $value : $this->value,
+            $quoted !== null ? $quoted : $this->quoted,
+        );
     }
 }
