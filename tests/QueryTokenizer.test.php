@@ -3,6 +3,7 @@
 use Technically\SearchQuery\QueryTokenizer;
 use Technically\SearchQuery\Tokens\Literal;
 use Technically\SearchQuery\Tokens\Operator;
+use Technically\SearchQuery\Tokens\QuotedString;
 use Technically\SearchQuery\Tokens\Whitespace;
 
 describe('QueryTokenizer', function () {
@@ -12,7 +13,7 @@ describe('QueryTokenizer', function () {
         expect([...$tokenizer->tokenize()])->toBe([]);
     });
 
-    it('should tokenize whitespace-only squence to a single whitespace token', function () {
+    it('should tokenize whitespace-only sequence to a single whitespace token', function () {
         $tokenizer = new QueryTokenizer('   ');
 
         expect([...$tokenizer->tokenize()])->toEqual([
@@ -40,39 +41,39 @@ describe('QueryTokenizer', function () {
         ]);
     });
 
-    it('should tokenize a quoted sequence as a single literal token', function () {
+    it('should tokenize a quoted sequence as a single quoted string token', function () {
         $tokenizer = new QueryTokenizer('"hello world"');
 
         expect([...$tokenizer->tokenize()])->toEqual([
-            new Literal('hello world', quoted: true),
+            new QuotedString('hello world'),
         ]);
     });
 
-    it('should tokenize series of quoted sequences as literal tokens', function () {
-        $tokenizer = new QueryTokenizer('"hello world" "this is a sequence" "of literals"');
+    it('should tokenize series of quoted sequences as quoted strings tokens', function () {
+        $tokenizer = new QueryTokenizer('"hello world" "this is a sequence" "of quoted strings"');
 
         expect([...$tokenizer->tokenize()])->toEqual([
-            new Literal('hello world', quoted: true),
+            new QuotedString('hello world'),
             new Whitespace(),
-            new Literal('this is a sequence', quoted: true),
+            new QuotedString('this is a sequence'),
             new Whitespace(),
-            new Literal('of literals', quoted: true),
+            new QuotedString('of quoted strings'),
         ]);
     });
 
-    it('should allow escaped quotes inside quoted literals', function () {
+    it('should allow escaping quotes inside quoted strings', function () {
         $tokenizer = new QueryTokenizer('"hello \"new\" world"');
 
         expect([...$tokenizer->tokenize()])->toEqual([
-            new Literal('hello "new" world', quoted: true),
+            new QuotedString('hello "new" world'),
         ]);
     });
 
-    it('should allow using escape character before any character', function () {
+    it('should allow using escape character with any character', function () {
         $tokenizer = new QueryTokenizer('"\h\e\l\l\o \"\n\e\w\" \w\o\r\l\d"');
 
         expect([...$tokenizer->tokenize()])->toEqual([
-            new Literal('hello "new" world', quoted: true),
+            new QuotedString('hello "new" world'),
         ]);
     });
 
@@ -82,11 +83,11 @@ describe('QueryTokenizer', function () {
         expect([...$tokenizer->tokenize()])->toEqual([
             new Literal('hello'),
             new Whitespace(),
-            new Literal('new world', quoted: true),
+            new QuotedString('new world'),
         ]);
     });
 
-    it('should allow quoting characters outside of quoted literals', function () {
+    it('should allow quoting characters outside of quoted strings', function () {
         $tokenizer = new QueryTokenizer('display 55\"');
 
         expect([...$tokenizer->tokenize()])->toEqual([
@@ -96,11 +97,19 @@ describe('QueryTokenizer', function () {
         ]);
     });
 
-    it('should allow escaped quotes in unquoted characters ', function () {
+    it('should allow escaping quotes in unquoted literals', function () {
         $tokenizer = new QueryTokenizer('\"display\"');
 
         expect([...$tokenizer->tokenize()])->toEqual([
             new Literal('"display"'),
+        ]);
+    });
+
+    it('should allow escaping whitespace in unquoted literals', function () {
+        $tokenizer = new QueryTokenizer('hello\ world');
+
+        expect([...$tokenizer->tokenize()])->toEqual([
+            new Literal('hello world'),
         ]);
     });
 
@@ -114,7 +123,47 @@ describe('QueryTokenizer', function () {
         ]);
     });
 
-    it('should tokenize potentially usage of `:` operator preceding a literal', function () {
+    it('should tokenize "greater" operator ', function () {
+        $tokenizer = new QueryTokenizer('year>2020');
+
+        expect([...$tokenizer->tokenize()])->toEqual([
+            new Literal('year'),
+            new Operator('>'),
+            new Literal('2020'),
+        ]);
+    });
+
+    it('should tokenize "greater equals" operator ', function () {
+        $tokenizer = new QueryTokenizer('year>=2020');
+
+        expect([...$tokenizer->tokenize()])->toEqual([
+            new Literal('year'),
+            new Operator('>='),
+            new Literal('2020'),
+        ]);
+    });
+
+    it('should tokenize "less" operator ', function () {
+        $tokenizer = new QueryTokenizer('year<2020');
+
+        expect([...$tokenizer->tokenize()])->toEqual([
+            new Literal('year'),
+            new Operator('<'),
+            new Literal('2020'),
+        ]);
+    });
+
+    it('should tokenize "less equal" operator ', function () {
+        $tokenizer = new QueryTokenizer('year<=2020');
+
+        expect([...$tokenizer->tokenize()])->toEqual([
+            new Literal('year'),
+            new Operator('<='),
+            new Literal('2020'),
+        ]);
+    });
+
+    it('should tokenize invalid usage of `:` operator preceding a literal', function () {
         $tokenizer = new QueryTokenizer(':ivan');
 
         expect([...$tokenizer->tokenize()])->toEqual([
@@ -188,6 +237,28 @@ describe('QueryTokenizer', function () {
             new Operator('-'),
             new Operator('-'),
             new Literal('active'),
+        ]);
+    });
+
+    it('should tokenize invalid multi-operator expressions', function () {
+        $tokenizer = new QueryTokenizer('name:ivan:john status:<=active year>=<2020');
+
+        expect([...$tokenizer->tokenize()])->toEqual([
+            new Literal('name'),
+            new Operator(':'),
+            new Literal('ivan'),
+            new Operator(':'),
+            new Literal('john'),
+            new Whitespace(),
+            new Literal('status'),
+            new Operator(':'),
+            new Operator('<='),
+            new Literal('active'),
+            new Whitespace(),
+            new Literal('year'),
+            new Operator('>='),
+            new Operator('<'),
+            new Literal('2020'),
         ]);
     });
 });

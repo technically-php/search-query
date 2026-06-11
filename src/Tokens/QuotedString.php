@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Technically\SearchQuery\Tokens;
 
-final readonly class Literal implements Token
+final readonly class QuotedString implements Token
 {
     public function __construct(
         public string $value,
@@ -13,6 +13,6 @@ final readonly class Literal implements Token
 
     public function toString(): string
     {
-        return addcslashes($this->value, ' ');
+        return sprintf('"%s"', addcslashes($this->value, '"'));
     }
 }
