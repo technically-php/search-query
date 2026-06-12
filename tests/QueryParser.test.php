@@ -1,14 +1,9 @@
 <?php
 
-use Technically\SearchQuery\Filters\BooleanFilter;
 use Technically\SearchQuery\Filters\FieldFilter;
 use Technically\SearchQuery\Filters\KeywordFilter;
 use Technically\SearchQuery\QueryParser;
 use Technically\SearchQuery\Query;
-use Technically\SearchQuery\Schema;
-use Technically\SearchQuery\Tokens\Literal;
-use Technically\SearchQuery\Tokens\Operator;
-use Technically\SearchQuery\Tokens\QuotedString;
 
 describe('QueryParser', function (): void {
     it('should parse empty queries', function (): void {
@@ -75,7 +70,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new KeywordFilter(new QuotedString('hello world')),
+                new KeywordFilter('hello world', quoted: true),
             ]),
         );
     });
@@ -96,7 +91,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new KeywordFilter(new QuotedString('hello world'), exclude: true),
+                new KeywordFilter('hello world', quoted: true, exclude: true),
             ]),
         );
     });
@@ -146,7 +141,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new KeywordFilter(new Literal('tag:'), exclude: true),
+                new KeywordFilter('tag:', exclude: true),
             ]),
         );
     });
@@ -176,7 +171,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter(new QuotedString('custom field'), ':', 'hello'),
+                new FieldFilter('custom field', ':', 'hello'),
             ]),
         );
     });
@@ -186,7 +181,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter('field', ':', new QuotedString('hello world')),
+                new FieldFilter('field', ':', 'hello world', quoted: true),
             ]),
         );
     });
@@ -196,7 +191,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter(new QuotedString('custom field'), ':', '-hello'),
+                new FieldFilter('custom field', ':', '-hello'),
             ]),
         );
     });
@@ -206,7 +201,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter(new QuotedString('custom field'), ':', '-"hello world"'),
+                new FieldFilter('custom field', ':', '-"hello world"'),
             ]),
         );
     });
@@ -216,7 +211,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter(new QuotedString('custom field'), ':', new QuotedString('hello world')),
+                new FieldFilter('custom field', ':', 'hello world', quoted: true),
             ]),
         );
     });
@@ -226,7 +221,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter('---field', ':', 'value', exclude: true),
+                new FieldFilter('field', ':', 'value', exclude: true),
             ]),
         );
 
@@ -242,7 +237,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new FieldFilter('---field', ':', '------value', exclude: true),
+                new FieldFilter('field', ':', '------value', exclude: true),
             ]),
         );
     });
@@ -278,13 +273,7 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new KeywordFilter('-'),
-                new KeywordFilter(':'),
-                new KeywordFilter('--', exclude: true),
                 new FieldFilter('field', ':', 'value'),
-                new KeywordFilter('--', exclude: true),
-                new KeywordFilter(':'),
-                new KeywordFilter('-'),
             ]),
         );
 
@@ -292,14 +281,22 @@ describe('QueryParser', function (): void {
 
         expect($query)->toEqual(
             new Query([
-                new KeywordFilter(':'),
-                new KeywordFilter('::'),
-                new KeywordFilter('-', exclude: true),
                 new FieldFilter('field', ':', ':value'),
-                new KeywordFilter('--', exclude: true),
-                new KeywordFilter('-', exclude: true),
-                new KeywordFilter('-'),
             ]),
+        );
+    });
+
+    it('should gracefully operator-only queries', function () {
+        $query = (new QueryParser())->parse('-');
+
+        expect($query)->toEqual(
+            new Query([]),
+        );
+
+        $query = (new QueryParser())->parse(':>=');
+
+        expect($query)->toEqual(
+            new Query([]),
         );
     });
 

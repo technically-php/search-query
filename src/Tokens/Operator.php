@@ -7,12 +7,12 @@ use InvalidArgumentException;
 
 final readonly class Operator implements Token
 {
-    public const COLON         = ':';
-    public const MINUS         = '-';
-    public const GREATER       = '>';
-    public const GREATER_EQUAL = '>=';
-    public const LESS          = '<';
-    public const LESS_EQUAL    = '<=';
+    public const string COLON         = ':';
+    public const string MINUS         = '-';
+    public const string GREATER       = '>';
+    public const string GREATER_EQUAL = '>=';
+    public const string LESS          = '<';
+    public const string LESS_EQUAL    = '<=';
 
     public function __construct(
         public string $operator,

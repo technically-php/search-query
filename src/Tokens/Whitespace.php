@@ -20,6 +20,6 @@ final readonly class Whitespace implements Token
 
     public function toString(): string
     {
-        return ' ';
+        return $this->value;
     }
 }

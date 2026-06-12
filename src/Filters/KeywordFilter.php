@@ -9,21 +9,20 @@ use Technically\SearchQuery\Tokens\QuotedString;
 
 final readonly class KeywordFilter implements Filter
 {
-    public Literal | QuotedString $keyword;
-
-    public bool $exclude;
-
     public function __construct(
-        Literal | QuotedString | string $keyword,
-        bool                            $exclude = false,
+        public string $keyword,
+        public bool   $quoted = false,
+        public bool   $exclude = false,
     ) {
-        $this->keyword = is_string($keyword) ? new Literal($keyword) : $keyword;
-        $this->exclude = $exclude;
+        // Nothing
     }
 
     public function toString(): string
     {
-        return ($this->exclude ? Operator::MINUS : '')
-               . $this->keyword->toString();
+        $keyword = $this->quoted || empty($this->keyword)
+            ? new QuotedString($this->keyword)
+            : new Literal($this->keyword);
+
+        return ($this->exclude ? Operator::MINUS : '') . $keyword->toString();
     }
 }

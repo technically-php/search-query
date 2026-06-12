@@ -11,14 +11,14 @@ use Technically\SearchQuery\Tokens\Whitespace;
 
 final class QueryTokenizer
 {
-    private const WHITESPACE    = ' ';
-    private const QUOTE         = '"';
-    private const ESCAPE        = '\\';
-    private const COLON         = ':';
-    private const MINUS         = '-';
-    private const GREATER       = '>';
-    private const LESS          = '<';
-    private const EQUAL         = '=';
+    private const string WHITESPACE    = ' ';
+    private const string QUOTE         = '"';
+    private const string ESCAPE        = '\\';
+    private const string COLON         = ':';
+    private const string MINUS         = '-';
+    private const string GREATER       = '>';
+    private const string LESS          = '<';
+    private const string EQUAL         = '=';
 
     private readonly string $sequence;
     private int             $len;

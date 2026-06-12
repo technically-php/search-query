@@ -7,14 +7,18 @@ use LogicException;
 use Technically\SearchQuery\Filters\FieldFilter;
 use Technically\SearchQuery\Filters\Filter;
 use Technically\SearchQuery\Filters\KeywordFilter;
-use Technically\SearchQuery\Tokens\Literal;
+use Technically\SearchQuery\Support\TokenSequence;
 use Technically\SearchQuery\Tokens\Operator;
-use Technically\SearchQuery\Tokens\QuotedString;
 use Technically\SearchQuery\Tokens\Token;
 use Technically\SearchQuery\Tokens\Whitespace;
 
 final readonly class QueryParser
 {
+    private const int PHASE_INITIAL  = 0;
+    private const int PHASE_KEYWORD  = 1;
+    private const int PHASE_OPERATOR = 2;
+    private const int PHASE_VALUE    = 3;
+
     public function parse(string $query): Query
     {
         if (empty($query)) {
@@ -46,15 +50,15 @@ final readonly class QueryParser
     private function parseGroup(array $tokens): Filter | null
     {
         $position = -1;
-        $length = count($tokens);
+        $length   = count($tokens);
+
+        $phase = self::PHASE_INITIAL;
 
         $exclude = false;
-        /** @var Literal|QuotedString $keyword */
-        $keyword = null;
+        $keyword = new TokenSequence();
         /** @var Operator|null $operator */
         $operator = null;
-        /** @var Literal|QuotedString $value */
-        $value = null;
+        $value    = new TokenSequence();
 
         while (++$position < $length) {
             $token = $tokens[$position] ?? null;
@@ -63,103 +67,75 @@ final readonly class QueryParser
                 throw new LogicException('This should never happen.');
             }
 
-            if ($token instanceof Literal || $token instanceof QuotedString) {
-                // It's the first literal in the group -> store it as "keyword"
-                if ($keyword === null) {
-                    $keyword = $token;
-                    continue;
-                }
-
-                // If it's a consequent literal in a group before we encountered an operator -> append it to the keyword.
-                if ($operator === null) {
-                    $keyword = $keyword->append($token);
-                    continue;
-                }
-
-                // If it's a first literal after an operator -> store it as "value"
-                if ($value === null) {
-                    $value = $token;
-                    continue;
-                }
-
-                // If it's a consequent literal after an operator -> append it to the value.
-                $value = $value->append($token);
-                continue;
-            }
-
-            if ($token instanceof Operator && $token->operator === Operator::MINUS) {
-                if ($keyword === null && $value === null && ! $exclude) {
-                    // If it's a leading `-`, treat it as negating the value.
+            if ($phase === self::PHASE_INITIAL) {
+                if ( ! $exclude && $token instanceof Operator && $token->operator === Operator::MINUS) {
                     $exclude = true;
                     continue;
                 }
 
-                if ($keyword === null) {
-                    // If there's no keyword yet -> treat it as a (beginning of) keyword.
-                    $keyword = new Literal($token->toString());
+                if ($token instanceof Operator) {
+                    // Misplaced operator. Ignore it.
                     continue;
                 }
 
-                if ($operator === null) {
-                    $keyword = $keyword->append($token);
-                    continue;
-                }
-
-                if ($value === null) {
-                    $value = new Literal($token->toString());
-                    continue;
-                }
-
-                // in any other scenario, append it to the value
-                $value = $value->append($token);
+                $phase = self::PHASE_KEYWORD;
+                $keyword->append($token);
                 continue;
             }
 
-            if ($token instanceof Operator && $token->operator !== Operator::MINUS) {
-                if ($keyword === null) {
-                    // Misplaced leading binary operator. The best we can do is to treat it as a part of the keyword.
-                    $keyword = new Literal($token->toString());
-                    continue;
-                }
-
-                if ($operator === null) {
-                    // If it's a binary operator after a keyword -> store it as "operator"
+            if ($phase === self::PHASE_KEYWORD) {
+                if ($token instanceof Operator && $token->operator !== Operator::MINUS) {
+                    $phase    = self::PHASE_OPERATOR;
                     $operator = $token;
                     continue;
                 }
 
-                if ($value === null) {
-                    // If it's following an operator, but there's no "value" yet -> treat it as "value"
-                    $value = new Literal($token->toString());
-                    continue;
-                }
-
-                // in any other scenario, append it to the value
-                $value = $value->append($token);
+                $keyword->append($token);
+                continue;
             }
+
+            if ($phase === self::PHASE_OPERATOR) {
+                $phase = self::PHASE_VALUE;
+                $value->append($token);
+                continue;
+            }
+
+            if ($phase === self::PHASE_VALUE) {
+                $value->append($token);
+                continue;
+            }
+
+            throw new LogicException('This should never happen.');
         }
 
-        if ($keyword !== null && $operator !== null && $value !== null) {
+        if ( ! $keyword->isEmpty() && $operator !== null && ! $value->isEmpty()) {
             // Field filter with a value, with optional negation (minus) prefix:
             //  [-]{field}{operator}{value}
-            return new FieldFilter($keyword, $operator, $value, exclude : $exclude);
+            return new FieldFilter(
+                $keyword->toString(),
+                $operator->operator,
+                $value->toString(),
+                quoted : $value->isQuoted(),
+                exclude: $exclude,
+            );
         }
 
-        if ($keyword !== null && $operator !== null && $value === null) {
+        if ( ! $keyword->isEmpty() && $operator !== null && $value->isEmpty()) {
             // Field filter without a value, with optional negation (minus) prefix:
             //  [-]{field}{operator}
             // Convert it to a keyword filter - the best we can do.
-            return new KeywordFilter($keyword->append($operator), exclude: $exclude);
+            $keyword->append($operator);
+            return new KeywordFilter($keyword->toString(), quoted: $keyword->isQuoted(), exclude: $exclude);
         }
 
-        if ($keyword !== null && $value === null) {
+        if ( ! $keyword->isEmpty() && $value->isEmpty()) {
             // No field, no operator, only value -> keyword filter
-            return new KeywordFilter($keyword, exclude: $exclude);
+            return new KeywordFilter($keyword->toString(), quoted: $keyword->isQuoted(), exclude: $exclude);
         }
 
-        if ($keyword === null && $value === null && $exclude === true) {
-            // Lone `-` operator -> treat it as a keyword filter
-            return new KeywordFilter(new Literal(Operator::MINUS));
+        if ($keyword->isEmpty() && $value->isEmpty()) {
+            // Lone operator -> ignore it
+            return null;
         }
 
         throw new LogicException('This should never happen.');
@@ -172,8 +148,8 @@ final readonly class QueryParser
     private function splitGroups(array $tokens): iterable
     {
         $position = -1;
-        $length = count($tokens);
-        $group = [];
+        $length   = count($tokens);
+        $group    = [];
 
         if ($length === 0) {
             return [];
