@@ -8,12 +8,12 @@ use InvalidArgumentException;
 final readonly class Whitespace implements Token
 {
     public function __construct(
-        public string $source = ' ',
+        public string $value = ' ',
     ) {
-        if (empty($source)) {
+        if (empty($value)) {
             throw new InvalidArgumentException('Whitespace token cannot be empty.');
         }
-        if (trim($source) !== '') {
+        if (trim($value) !== '') {
             throw new InvalidArgumentException('Whitespace token cannot contain non-whitespace characters.');
         }
     }

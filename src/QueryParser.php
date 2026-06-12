@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace Technically\SearchQuery;
 
+use LogicException;
 use Technically\SearchQuery\Filters\FieldFilter;
 use Technically\SearchQuery\Filters\Filter;
 use Technically\SearchQuery\Filters\KeywordFilter;
 use Technically\SearchQuery\Tokens\Literal;
 use Technically\SearchQuery\Tokens\Operator;
+use Technically\SearchQuery\Tokens\QuotedString;
 use Technically\SearchQuery\Tokens\Token;
 use Technically\SearchQuery\Tokens\Whitespace;
 
@@ -27,6 +29,8 @@ final readonly class QueryParser
             return Query::empty();
         }
 
+        $filters = [];
+
         foreach ($this->splitGroups($tokens) as $group) {
             if ($filter = $this->parseGroup($group)) {
                 $filters[] = $filter;
@@ -44,103 +48,121 @@ final readonly class QueryParser
         $position = -1;
         $length = count($tokens);
 
-        $field = null;
-        $negatedField = false;
+        $exclude = false;
+        /** @var Literal|QuotedString $keyword */
+        $keyword = null;
+        /** @var Operator|null $operator */
+        $operator = null;
+        /** @var Literal|QuotedString $value */
         $value = null;
-        $negatedValue = false;
 
         while (++$position < $length) {
             $token = $tokens[$position] ?? null;
 
             if ($token instanceof Whitespace) {
-                // Ignore whitespaces.
-                continue;
+                throw new LogicException('This should never happen.');
             }
 
-            if ($token instanceof Literal) {
-                // If `value` is vacant, fill it.
-                //
-                // This happens in one of the two cases:
-                //  - It's the first literal in the query  -> both `field` and `value` are empty.
-                //  - It's the first literal after a colon -> `field` is set, `value` is empty.
+            if ($token instanceof Literal || $token instanceof QuotedString) {
+                // It's the first literal in the group -> store it as "keyword"
+                if ($keyword === null) {
+                    $keyword = $token;
+                    continue;
+                }
+
+                // If it's a consequent literal in a group before we encountered an operator -> append it to the keyword.
+                if ($operator === null) {
+                    $keyword = $keyword->append($token);
+                    continue;
+                }
+
+                // If it's a first literal after an operator -> store it as "value"
                 if ($value === null) {
                     $value = $token;
                     continue;
                 }
 
-                // Append trailing literals to the value
-                $value = $value->with(value: $value->value . $token->toString());
+                // If it's a consequent literal after an operator -> append it to the value.
+                $value = $value->append($token);
                 continue;
             }
 
             if ($token instanceof Operator && $token->operator === Operator::MINUS) {
-                if ($field === null && $value === null) {
-                    // If it's a leading `-` -> treat it as negating the value.
-                    // Once there is a colon operator, the value and its negation flag will be moved to become the field.
-                    $negatedValue = true;
-                    continue;
-                }
-                if ($field !== null && $value === null) {
-                    // If it's following a colon operator (but preceding value) -> treat it as negating the value
-                    $negatedValue = true;
+                if ($keyword === null && $value === null && ! $exclude) {
+                    // If it's a leading `-`, treat it as negating the value.
+                    $exclude = true;
                     continue;
                 }
 
-                if ($value !== null) {
-                    // If it's following field, colon, and a value -> append it to the value
-                    $value = $value->with(value: $value->value . $token->toString());
+                if ($keyword === null) {
+                    // If there's no keyword yet -> treat it as a (beginning of) keyword.
+                    $keyword = new Literal($token->toString());
                     continue;
                 }
 
-                // Misplaced `-` operator. Ignore it.
+                if ($operator === null) {
+                    $keyword = $keyword->append($token);
+                    continue;
+                }
+
+                if ($value === null) {
+                    $value = new Literal($token->toString());
+                    continue;
+                }
+
+                // in any other scenario, append it to the value
+                $value = $value->append($token);
                 continue;
             }
 
-            if ($token instanceof Operator && $token->operator === Operator::COLON) {
-                if ($field === null && $value !== null) {
-                    // If it's a colon after a lone keyword (initially stored in value)
-                    // Move `value` into `field`.
-                    $field = $value;
-                    $value = null;
-                    // And also carry the negation flag over too.
-                    $negatedField = $negatedValue;
-                    $negatedValue = false;
+            if ($token instanceof Operator && $token->operator !== Operator::MINUS) {
+                if ($keyword === null) {
+                    // Misplaced leading binary operator. The best we can do is to treat it as a part of the keyword.
+                    $keyword = new Literal($token->toString());
                     continue;
                 }
 
-                if ($field !== null && $value !== null) {
-                    // If it's following field, colon, and a value, append it to the value
-                    $value = $value->with(value: $value->value . $token->toString());
+                if ($operator === null) {
+                    // If it's a binary operator after a keyword -> store it as "operator"
+                    $operator = $token;
                     continue;
                 }
 
-                // Misplaced `-` operator. Ignore it.
-                continue;
+                if ($value === null) {
+                    // If it's following an operator, but there's no "value" yet -> treat it as "value"
+                    $value = new Literal($token->toString());
+                    continue;
+                }
+
+                // in any other scenario, append it to the value
+                $value = $value->append($token);
             }
         }
 
-        if ($field !== null) {
-            // Field filter with or without a value, with optional negation (minus) on any side.
-            //  `[-]field:[-][value]`
-            return new FieldFilter(
-                field  : $field->value,
-                value  : $value?->value ?? '',
-                exact  : $value?->quoted ?? false,
-                exclude: $negatedValue xor $negatedField,
-            );
+        if ($keyword !== null && $operator !== null && $value !== null) {
+            // Field filter with a value, with optional negation (minus) prefix:
+            //  [-]{field}{operator}{value}
+            return new FieldFilter($keyword, $operator, $value, exclude : $exclude);
         }
 
-        if ($value !== null) {
-            // No field, only value -> keyword filter
-            return new KeywordFilter(
-                keyword: $value->value,
-                exact  : $value->quoted,
-                exclude: $negatedValue,
-            );
+        if ($keyword !== null && $operator !== null && $value === null) {
+            // Field filter without a value, with optional negation (minus) prefix:
+            //  [-]{field}{operator}
+            // Convert it to a keyword filter - the best we can do.
+            return new KeywordFilter($keyword->append($operator), exclude: $exclude);
         }
 
-        // Invalid filter. Ignore it.
-        return null;
+        if ($keyword !== null && $value === null) {
+            // No field, no operator, only value -> keyword filter
+            return new KeywordFilter($keyword, exclude: $exclude);
+        }
+
+        if ($keyword === null && $value === null && $exclude === true) {
+            // Lone `-` operator -> treat it as a keyword filter
+            return new KeywordFilter(new Literal(Operator::MINUS));
+        }
+
+        throw new LogicException('This should never happen.');
     }
 
     /**
@@ -162,7 +184,10 @@ final readonly class QueryParser
             $token = $tokens[$position] ?? null;
 
             if ($token instanceof Whitespace || $token === null) {
-                yield $group;
+                if (count($group) > 0) {
+                    yield $group;
+                }
+
                 $group = [];
                 continue;
             }
