@@ -45,7 +45,7 @@ final readonly class FieldFilter implements Filter
 
         return ($this->exclude ? OperatorToken::MINUS : '')
                . $field->toString()
-               . $this->operator->value
+               . $this->operator->toString()
                . $value->toString();
     }
 }

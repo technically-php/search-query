@@ -30,4 +30,14 @@ final readonly class Query
     {
         return empty($this->filters);
     }
+
+    public function toString(): string
+    {
+        $filters = array_map(
+            fn (Filter $filter) => $filter->toString(),
+            $this->filters,
+        );
+
+        return implode(' ', $filters);
+    }
 }
