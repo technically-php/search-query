@@ -4,6 +4,8 @@ _🔍 Parse plaintext search queries into easy-to-use filter structures._
 
 This library takes a human-typed search query string and parses it into a structured `Query` object containing typed filters (`KeywordFilter`, `FieldFilter`). It supports quoted strings, negation, comparison operators, and field-based filtering.
 
+[![Test](https://github.com/technically-php/search-query/actions/workflows/test.yml/badge.svg)](https://github.com/technically-php/search-query/actions/workflows/test.yml)
+
 ---
 
 ## Installation
