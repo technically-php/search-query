@@ -12,7 +12,8 @@ This library takes a human-typed search query string and parses it into a struct
 composer require technically/search-query
 ```
 
-Requires PHP ^8.4.
+Requirements:
+- PHP 8.4+
 
 ---
 
