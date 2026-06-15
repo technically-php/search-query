@@ -7,8 +7,8 @@ use LogicException;
 use Technically\SearchQuery\Filters\FieldFilter;
 use Technically\SearchQuery\Filters\Filter;
 use Technically\SearchQuery\Filters\KeywordFilter;
-use Technically\SearchQuery\Support\TokenSequence;
 use Technically\SearchQuery\Tokens\Operator;
+use Technically\SearchQuery\Tokens\Support\TokenSequence;
 use Technically\SearchQuery\Tokens\Token;
 use Technically\SearchQuery\Tokens\Whitespace;
 

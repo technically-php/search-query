@@ -1,6 +1,6 @@
 <?php
 
-namespace Technically\SearchQuery\Support;
+namespace Technically\SearchQuery\Tokens\Support;
 
 use LogicException;
 use Technically\SearchQuery\Tokens\Literal;
