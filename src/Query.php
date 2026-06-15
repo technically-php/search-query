@@ -9,7 +9,10 @@ use Technically\SearchQuery\Filters\Filter;
 final readonly class Query
 {
     public function __construct(
-        public array $filters,
+        /**
+         * @var Filter[]
+         */
+        public array $filters = [],
     ) {
         foreach ($filters as $filter) {
             if (! $filter instanceof Filter) {

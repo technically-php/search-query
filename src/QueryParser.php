@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Technically\SearchQuery;
 
 use LogicException;
+use Technically\SearchQuery\Contracts\Parser;
+use Technically\SearchQuery\Contracts\Tokenizer;
 use Technically\SearchQuery\Filters\FieldFilter;
 use Technically\SearchQuery\Filters\Filter;
 use Technically\SearchQuery\Filters\KeywordFilter;
@@ -12,12 +14,18 @@ use Technically\SearchQuery\Tokens\Support\TokenSequence;
 use Technically\SearchQuery\Tokens\Token;
 use Technically\SearchQuery\Tokens\Whitespace;
 
-final readonly class QueryParser
+final readonly class QueryParser implements Parser
 {
     private const int PHASE_INITIAL  = 0;
     private const int PHASE_KEYWORD  = 1;
     private const int PHASE_OPERATOR = 2;
     private const int PHASE_VALUE    = 3;
+
+    public function __construct(
+        private Tokenizer $tokenizer = new QueryTokenizer(),
+    ) {
+        // Nothing
+    }
 
     public function parse(string $query): Query
     {
@@ -25,9 +33,7 @@ final readonly class QueryParser
             return Query::empty();
         }
 
-        $tokenizer = new QueryTokenizer($query);
-
-        $tokens = iterator_to_array($tokenizer->tokenize());
+        $tokens = iterator_to_array($this->tokenizer->tokenize($query));
 
         if (empty($tokens)) {
             return Query::empty();

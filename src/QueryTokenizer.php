@@ -3,38 +3,40 @@ declare(strict_types=1);
 
 namespace Technically\SearchQuery;
 
+use Technically\SearchQuery\Contracts\Tokenizer;
 use Technically\SearchQuery\Tokens\Literal;
 use Technically\SearchQuery\Tokens\Operator;
 use Technically\SearchQuery\Tokens\QuotedString;
 use Technically\SearchQuery\Tokens\Token;
 use Technically\SearchQuery\Tokens\Whitespace;
 
-final class QueryTokenizer
+final class QueryTokenizer implements Tokenizer
 {
-    private const string WHITESPACE    = ' ';
-    private const string QUOTE         = '"';
-    private const string ESCAPE        = '\\';
-    private const string COLON         = ':';
-    private const string MINUS         = '-';
-    private const string GREATER       = '>';
-    private const string LESS          = '<';
-    private const string EQUAL         = '=';
+    private const string WHITESPACE = ' ';
+    private const string QUOTE      = '"';
+    private const string ESCAPE     = '\\';
+    private const string COLON      = ':';
+    private const string MINUS      = '-';
+    private const string GREATER    = '>';
+    private const string LESS       = '<';
+    private const string EQUAL      = '=';
 
-    private readonly string $sequence;
-    private int             $len;
-    private int             $position;
-    private string          $currentChar;
-
-    public function __construct(string $sequence)
-    {
-        $this->sequence = $sequence;
-    }
+    private string $sequence;
+    private int    $len;
+    private int    $position;
+    private string $currentChar;
 
     /**
      * @return Token[]
      */
-    public function tokenize(): iterable
+    public function tokenize(string $query): iterable
     {
+        // Short-circuit
+        if (empty($query)) {
+            return;
+        }
+
+        $this->sequence    = $query;
         $this->len         = mb_strlen($this->sequence);
         $this->position    = 0;
         $this->currentChar = mb_substr($this->sequence, $this->position, 1);
