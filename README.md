@@ -153,6 +153,7 @@ new KeywordFilter('legacy', exclude: true);
 - `public readonly bool $exclude` — Whether the keyword is negated.
 
 **Methods:**
+- `unquote(): self` — Returns a new instance with `quoted` set to `false`.
 - `toString(): string` — Serializes the filter back to query syntax.
 
 #### `FieldFilter`
@@ -175,6 +176,8 @@ new FieldFilter('tag', ':', 'legacy', exclude: true);
 - `public readonly bool $exclude` — Whether the filter is negated.
 
 **Methods:**
+- `matches(...): bool` — Check whether the filter matches the given properties.
+- `unquote(): self` — Returns a new instance with `quoted` set to `false`.
 - `toString(): string` — Serializes the filter back to query syntax.
 
 ---
