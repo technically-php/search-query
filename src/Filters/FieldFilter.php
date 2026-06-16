@@ -51,13 +51,13 @@ final readonly class FieldFilter implements Filter
      */
     public function matches(
         string | null $field = null,
-        string | null $operator = null,
+        FilterOperator | string | null $operator = null,
         string | null $value = null,
         bool | null $quoted = null,
         bool | null $exclude = null
     ): bool {
         return ($field === null || $field === $this->field)
-            && ($operator === null || $operator === $this->operator->value)
+            && ($operator === null || FilterOperator::cast($operator) === $this->operator)
             && ($value === null || $value === $this->value)
             && ($quoted === null || $quoted === $this->quoted)
             && ($exclude === null || $exclude === $this->exclude);
